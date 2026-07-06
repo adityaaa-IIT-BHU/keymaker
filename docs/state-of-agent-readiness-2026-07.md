@@ -1,6 +1,6 @@
 # State of Agent Readiness — July 2026
 
-*63 well-known API companies, probed 2026-07-06 with `keymaker doctor` (this repo). Reproduce: `npx agent-ready doctor <hosts...>`. Raw data: [agent-readiness-scan-2026-07-06.json](agent-readiness-scan-2026-07-06.json).*
+*63 well-known API companies, probed 2026-07-06 with `keymaker doctor` (this repo). Reproduce: `npx keymaker-cli doctor <hosts...>`. Raw data: [agent-readiness-scan-2026-07-06.json](agent-readiness-scan-2026-07-06.json).*
 
 ## Headline
 

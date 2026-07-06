@@ -23,8 +23,8 @@ Plus a **curation report**: every endpoint or parameter with missing/weak docume
 ## Quickstart
 
 ```bash
-npx agent-ready generate https://your.api/openapi.json -o agent-ready
-npx agent-ready serve agent-ready       # agent signup + hosted /mcp on :8787
+npx keymaker-cli generate https://your.api/openapi.json -o agent-ready
+npx keymaker-cli serve agent-ready       # agent signup + hosted /mcp on :8787
 ```
 
 Or from a clone:
@@ -56,7 +56,7 @@ curl -s -X POST localhost:8787/agent-auth/verify -d '{"api_key":"ak_…"}'
 You don't need a second service. Mount the gateway in your existing app:
 
 ```js
-import { keymakerGateway, keymakerAuth } from "agent-ready";
+import { keymakerGateway, keymakerAuth } from "keymaker-cli";
 
 const gateway = await keymakerGateway({ dir: "./agent-ready" });
 const auth = keymakerAuth({ dir: "./agent-ready" });
@@ -108,7 +108,7 @@ curl -X POST localhost:8787/agent-auth/revoke \
 ## Check any live site: `keymaker doctor`
 
 ```bash
-npx agent-ready doctor stripe.com yourapi.com
+npx keymaker-cli doctor stripe.com yourapi.com
 # stripe.com: 1/3 agent surfaces   llms.txt ✓   auth.md ✗   /mcp ✗
 ```
 
@@ -129,7 +129,7 @@ Six checks, weighted by what actually drives agent tool-selection: operation doc
 ## Protect your API (drop-in middleware)
 
 ```js
-import { keymakerAuth } from "agent-ready";
+import { keymakerAuth } from "keymaker-cli";
 
 const auth = keymakerAuth({ dir: "./agent-ready", rateLimitPerMinute: 60 });
 app.use(auth);                    // Express
