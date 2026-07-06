@@ -2,9 +2,7 @@
 
 **Make your API agent-ready in an afternoon.**
 
-![keymaker demo — an agent discovers an API, signs itself up, and uses it via MCP with zero humans](https://raw.githubusercontent.com/adityaaa-IIT-BHU/keymaker/main/demo.gif)
-
-▶ **[Watch the 60-second full demo](https://github.com/adityaaa-IIT-BHU/keymaker/blob/main/demo.mp4)** — plays right on GitHub: score → generate → agent self-signup → live MCP call, end to end.
+![keymaker full demo — GitHub's spec scored live, then Peekalink's real API made agent-ready: signup and MCP tools with zero humans](https://raw.githubusercontent.com/adityaaa-IIT-BHU/keymaker/main/demo-full.gif)
 
 Point Keymaker at your OpenAPI spec. It emits everything an AI agent needs to discover, sign up for, and use your product — with zero humans in the loop:
 
