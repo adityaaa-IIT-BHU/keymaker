@@ -182,3 +182,7 @@ v0.1 — working generator, signup server, JWT attestation verification, scope-e
 - [ ] Registry submission: publish generated MCP servers to agent tool registries
 
 MIT. Built with the [MCP SDK](https://github.com/modelcontextprotocol/typescript-sdk).
+
+---
+
+Built by [Aditya Acharya](https://github.com/adityaaa-IIT-BHU) ([LinkedIn](https://www.linkedin.com/in/aditya-acharya-50a85a1b1/)). MIT. Issues and PRs welcome — especially corrections to the [scan data](docs/state-of-agent-readiness-2026-07.md).
