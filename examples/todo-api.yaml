@@ -1,0 +1,69 @@
+openapi: 3.0.3
+info:
+  title: Todozilla API
+  version: 1.0.0
+  description: A simple task-management API used to demo keymaker.
+servers:
+  - url: https://api.todozilla.example.com/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key issued via /agent-auth (see auth.md)
+paths:
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [Tasks]
+      summary: List tasks
+      description: Returns tasks, newest first. Supports filtering by status.
+      parameters:
+        - name: status
+          in: query
+          description: Filter by task status
+          schema: { type: string, enum: [open, done] }
+        - name: limit
+          in: query
+          description: Max results (default 20)
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+    post:
+      operationId: createTask
+      tags: [Tasks]
+      summary: Create a task
+      description: Creates a new task and returns it.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, description: Task title }
+                due: { type: string, format: date, description: Due date (YYYY-MM-DD) }
+      responses:
+        "201": { description: Created }
+  /tasks/{taskId}:
+    get:
+      operationId: getTask
+      tags: [Tasks]
+      summary: Get one task
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+    delete:
+      operationId: deleteTask
+      tags: [Tasks]
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Deleted }
