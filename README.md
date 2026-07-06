@@ -105,6 +105,15 @@ curl -X POST localhost:8787/agent-auth/revoke \
 
 (The generated `mcp-server.mjs` still works for stdio/local MCP clients like Claude Desktop.)
 
+## Check any live site: `keymaker doctor`
+
+```bash
+npx agent-ready doctor stripe.com yourapi.com
+# stripe.com: 1/3 agent surfaces   llms.txt ✓   auth.md ✗   /mcp ✗
+```
+
+We ran it across 63 top API companies: **71% have llms.txt, 8% have agent signup, exactly one has all three.** Full data: [State of Agent Readiness, July 2026](docs/state-of-agent-readiness-2026-07.md).
+
 ## Score your API (Lighthouse, for agents)
 
 ```bash
