@@ -2,7 +2,7 @@
 
 **Make your API agent-ready in an afternoon.**
 
-![keymaker demo — an agent discovers an API, signs itself up, and uses it via MCP with zero humans](demo.gif)
+![keymaker demo — an agent discovers an API, signs itself up, and uses it via MCP with zero humans](https://raw.githubusercontent.com/adityaaa-IIT-BHU/keymaker/main/demo.gif)
 
 Point Keymaker at your OpenAPI spec. It emits everything an AI agent needs to discover, sign up for, and use your product — with zero humans in the loop:
 
@@ -14,6 +14,13 @@ Point Keymaker at your OpenAPI spec. It emits everything an AI agent needs to di
 Plus a **curation report**: every endpoint or parameter with missing/weak documentation gets flagged — because agents choose tools by documentation quality, and auto-generated tools from an undocumented spec perform measurably worse.
 
 ## Quickstart
+
+```bash
+npx agent-ready generate https://your.api/openapi.json -o agent-ready
+npx agent-ready serve agent-ready       # agent signup + hosted /mcp on :8787
+```
+
+Or from a clone:
 
 ```bash
 npm install
@@ -42,7 +49,7 @@ curl -s -X POST localhost:8787/agent-auth/verify -d '{"api_key":"ak_…"}'
 You don't need a second service. Mount the gateway in your existing app:
 
 ```js
-import { keymakerGateway, keymakerAuth } from "keymaker";
+import { keymakerGateway, keymakerAuth } from "agent-ready";
 
 const gateway = await keymakerGateway({ dir: "./agent-ready" });
 const auth = keymakerAuth({ dir: "./agent-ready" });
@@ -106,7 +113,7 @@ Six checks, weighted by what actually drives agent tool-selection: operation doc
 ## Protect your API (drop-in middleware)
 
 ```js
-import { keymakerAuth } from "keymaker";
+import { keymakerAuth } from "agent-ready";
 
 const auth = keymakerAuth({ dir: "./agent-ready", rateLimitPerMinute: 60 });
 app.use(auth);                    // Express
