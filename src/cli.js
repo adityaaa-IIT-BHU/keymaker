@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { mkdir, writeFile, access } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { loadSpec } from "./parse.js";
 import { extractOperations } from "./extract.js";
-import { renderMcpServer } from "./gen-mcp.js";
+import { renderMcpServer, toTools } from "./gen-mcp.js";
 import { renderLlmsTxt } from "./gen-llms.js";
 import { renderAuthMd } from "./gen-authmd.js";
 import { startSignupServer } from "./serve.js";
@@ -42,6 +43,14 @@ program
     await writeFile(join(opts.out, "llms.txt"), renderLlmsTxt({ spec, ops, baseUrl, serviceUrl: opts.serviceUrl }));
     await writeFile(join(opts.out, "auth.md"), authMd);
     await writeFile(join(opts.out, ".well-known", "auth.md"), authMd);
+    await writeFile(
+      join(opts.out, "tools.json"),
+      JSON.stringify(
+        { title, version: spec.info?.version ?? "0.0.0", baseUrl, tools: toTools(ops) },
+        null,
+        2
+      )
+    );
 
     const configPath = join(opts.out, "signup.config.json");
     try {
@@ -58,6 +67,7 @@ program
             trusted_issuers: [],
             registrations_per_minute_per_ip: 10,
             verifies_per_minute_per_key: 120,
+            admin_token: `adm_${randomBytes(16).toString("hex")}`,
           },
           null,
           2
@@ -66,7 +76,7 @@ program
     }
 
     console.log(`✔ ${title}: ${ops.length} operations → ${opts.out}/`);
-    console.log("  mcp-server.mjs   llms.txt   auth.md   .well-known/auth.md   signup.config.json");
+    console.log("  mcp-server.mjs   llms.txt   auth.md   .well-known/auth.md   tools.json   signup.config.json");
     if (warnings.length) {
       console.log("\nCuration report — agents choose tools by docs quality; fix these in your spec:");
       for (const w of warnings.slice(0, 20)) console.log(`  ⚠ ${w}`);
@@ -83,16 +93,26 @@ program
   .command("score")
   .argument("<spec>", "OpenAPI spec path or URL")
   .description("Grade how agent-ready an API spec is (like Lighthouse, for agents)")
-  .action(async (specSrc) => {
+  .option("--json", "machine-readable output")
+  .option("--min <score>", "exit non-zero if the score is below this (for CI)")
+  .action(async (specSrc, opts) => {
     const spec = await loadSpec(specSrc);
     const { ops, warnings } = extractOperations(spec);
     const { total, grade, parts } = scoreSpec(spec, ops, warnings);
-    console.log(`Agent-readiness: ${total}/100  grade ${grade}   (${spec.info?.title ?? "API"}, ${ops.length} operations)\n`);
-    for (const p of parts) {
-      const bar = "█".repeat(Math.round((10 * p.got) / p.max)).padEnd(10, "░");
-      console.log(`  ${bar} ${String(p.got).padStart(3)}/${p.max}  ${p.name}${p.fix ? `  → ${p.fix}` : ""}`);
+    if (opts.json) {
+      console.log(JSON.stringify({ title: spec.info?.title ?? "API", operations: ops.length, total, grade, parts }, null, 2));
+    } else {
+      console.log(`Agent-readiness: ${total}/100  grade ${grade}   (${spec.info?.title ?? "API"}, ${ops.length} operations)\n`);
+      for (const p of parts) {
+        const bar = "█".repeat(Math.round((10 * p.got) / p.max)).padEnd(10, "░");
+        console.log(`  ${bar} ${String(p.got).padStart(3)}/${p.max}  ${p.name}${p.fix ? `  → ${p.fix}` : ""}`);
+      }
+      console.log(`\nAgents choose tools by documentation quality. Fix the arrows, re-run, ship.`);
     }
-    console.log(`\nAgents choose tools by documentation quality. Fix the arrows, re-run, ship.`);
+    if (opts.min && total < Number(opts.min)) {
+      console.error(`\n✖ score ${total} is below --min ${opts.min}`);
+      process.exit(1);
+    }
   });
 
 program

@@ -31,6 +31,7 @@ export function keymakerAuth({ dir, rateLimitPerMinute = 60 } = {}) {
     } catch {}
     const rec = Object.values(keys).find((k) => k.api_key === token);
     if (!rec) return fail(401, "unknown key; see /auth.md to register");
+    if (rec.revoked) return fail(401, "key revoked");
     if (rec.expires_at && Date.parse(rec.expires_at) < Date.now()) {
       return fail(401, "key expired; a human can make it permanent via /agent-auth/claim");
     }

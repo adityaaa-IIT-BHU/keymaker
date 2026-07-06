@@ -120,6 +120,20 @@ console.log(`  → createTask: ${created.result.content[0].text.split("\n")[0]}`
 const listed = await rpc("tools/call", { name: "listTasks", arguments: {} });
 console.log(`  → listTasks:  ${listed.result.content[0].text.split("\n").slice(1).join(" ")}`);
 
+step("6b", "AGENT: same tools over plain HTTP — no install, single origin");
+const httpCall = await (
+  await fetch(`http://localhost:${SIGNUP_PORT}/mcp`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream",
+      authorization: `Bearer ${reg.api_key}`,
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 99, method: "tools/call", params: { name: "listTasks", arguments: {} } }),
+  })
+).json();
+console.log(`  → POST /mcp listTasks: ${httpCall.result.content[0].text.split("\n").slice(1).join(" ")}`);
+
 step(7, "VENDOR: sees the metered, scoped key on their side");
 const issued = await (await fetch(`http://localhost:${SIGNUP_PORT}/agent-auth/keys`)).json();
 const k = issued.find((k) => k.client_name === "demo-agent");

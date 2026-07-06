@@ -35,6 +35,26 @@ curl -s -X POST localhost:8787/agent-auth/verify -d '{"api_key":"ak_…"}'
 # → { "valid": true, "scopes": ["read","write"], "usage": 1 }
 ```
 
+## One origin, whole loop: hosted `/mcp`
+
+`keymaker serve` doesn't just issue keys — it hosts the tools too. An agent needs exactly one URL:
+
+```
+GET  /llms.txt      → discovers your API
+GET  /auth.md       → learns how to register
+POST /agent-auth    → gets a scoped key
+POST /mcp           → calls your API's tools (Streamable HTTP, Bearer-gated)
+```
+
+No stdio, no local install. Tool visibility is scope-filtered — a `read`-scoped key doesn't even *see* write tools in `tools/list`. Every successful call is metered onto the key. Revoke instantly:
+
+```bash
+curl -X POST localhost:8787/agent-auth/revoke \
+  -H "x-admin-token: <from signup.config.json>" -d '{"key_id":"key_…"}'
+```
+
+(The generated `mcp-server.mjs` still works for stdio/local MCP clients like Claude Desktop.)
+
 ## Score your API (Lighthouse, for agents)
 
 ```bash
@@ -84,9 +104,11 @@ Attestations are verified as JWTs (RS256/ES256/EdDSA) against the issuer's JWKS 
 
 v0.1 — working generator, signup server, JWT attestation verification, scope-enforcing middleware, per-key/per-IP rate limits, agent-readiness scoring. 12 passing tests (`npm test`). Roadmap:
 
+- [x] Hosted `/mcp` endpoint — one origin serves discovery, signup, and tools
+- [x] Key revocation API
+- [x] CI gate: `keymaker score --json --min 80`
 - [ ] Stripe metered billing per key (agents as paying customers)
-- [ ] Hosted signup endpoint (`yourapi.keymaker.dev/agent-auth`) — no infra to run
-- [ ] Key revocation API + anomaly flags
+- [ ] Managed hosting (`yourapi.keymaker.dev`) — no infra to run
 - [ ] x402 fallback for account-less micropayment access
 - [ ] Framework adapters (Hono, Next.js route handlers)
 - [ ] Registry submission: publish generated MCP servers to agent tool registries

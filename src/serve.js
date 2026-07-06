@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { verifyAttestation } from "./attest.js";
+import { handleMcpRequest } from "./mcp-http.js";
 
 function readJson(req) {
   return new Promise((resolve) => {
@@ -36,6 +37,11 @@ export async function startSignupServer({ dir, port = 8787 }) {
     map.set(id, recent);
     return true;
   };
+
+  let mcpMeta = null;
+  try {
+    mcpMeta = JSON.parse(await readFile(join(dir, "tools.json"), "utf8"));
+  } catch {}
 
   // keys.json on disk is the source of truth — the vendor's API process
   // (keymakerAuth middleware) reads and writes it too.
@@ -111,7 +117,7 @@ export async function startSignupServer({ dir, port = 8787 }) {
         const keys = await load();
         const rec = Object.values(keys).find((k) => k.api_key === api_key);
         const expired = rec?.expires_at && Date.parse(rec.expires_at) < Date.now();
-        if (!rec || expired) return send(401, { valid: false });
+        if (!rec || expired || rec.revoked) return send(401, { valid: false });
         rec.usage += 1;
         await save(keys);
         return send(200, {
@@ -127,6 +133,41 @@ export async function startSignupServer({ dir, port = 8787 }) {
           200,
           Object.values(await load()).map(({ api_key, claim_token, ...rest }) => rest)
         );
+      }
+      if (req.method === "POST" && url.pathname === "/agent-auth/revoke") {
+        if (!config.admin_token || req.headers["x-admin-token"] !== config.admin_token) {
+          return send(401, { error: "admin token required (x-admin-token header)" });
+        }
+        const { key_id } = await readJson(req);
+        const keys = await load();
+        if (!keys[key_id]) return send(404, { error: "unknown key_id" });
+        keys[key_id].revoked = true;
+        await save(keys);
+        return send(200, { key_id, revoked: true });
+      }
+      if (url.pathname === "/mcp") {
+        if (!mcpMeta) return send(501, { error: "no tools.json in this directory; re-run keymaker generate" });
+        if (req.method !== "POST") return send(405, { error: "POST only (stateless MCP)" });
+        const header = req.headers.authorization ?? "";
+        const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+        const keys = await load();
+        const rec = token && Object.values(keys).find((k) => k.api_key === token);
+        const expired = rec?.expires_at && Date.parse(rec.expires_at) < Date.now();
+        if (!rec || expired || rec.revoked) {
+          return send(401, { error: "valid bearer key required; register via POST /agent-auth (see /auth.md)" });
+        }
+        const body = await readJson(req);
+        return handleMcpRequest(req, res, body, {
+          meta: mcpMeta,
+          agent: rec,
+          meter: async () => {
+            const fresh = await load();
+            if (fresh[rec.key_id]) {
+              fresh[rec.key_id].usage += 1;
+              await save(fresh);
+            }
+          },
+        });
       }
       return send(404, { error: "not found", hint: "GET /auth.md for agent registration instructions" });
     } catch (err) {
