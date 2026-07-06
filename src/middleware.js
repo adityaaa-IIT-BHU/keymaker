@@ -1,6 +1,7 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createBilling } from "./billing.js";
+import { findByKey, readKeys, writeKeys } from "./store.js";
 
 /**
  * Drop-in auth middleware for the vendor's own API.
@@ -10,7 +11,6 @@ import { createBilling } from "./billing.js";
  * GET/HEAD/OPTIONS require the `read` or `write` scope; everything else requires `write`.
  */
 export function keymakerAuth({ dir, rateLimitPerMinute = 60 } = {}) {
-  const keysPath = join(dir, "keys.json");
   const hits = new Map();
   const billingPromise = readFile(join(dir, "signup.config.json"), "utf8")
     .then((raw) => createBilling(JSON.parse(raw).billing))
@@ -29,11 +29,8 @@ export function keymakerAuth({ dir, rateLimitPerMinute = 60 } = {}) {
     const token = header.startsWith("Bearer ") ? header.slice(7) : null;
     if (!token) return fail(401, "missing bearer token; see /auth.md to register");
 
-    let keys = {};
-    try {
-      keys = JSON.parse(await readFile(keysPath, "utf8"));
-    } catch {}
-    const rec = Object.values(keys).find((k) => k.api_key === token);
+    const keys = await readKeys(dir);
+    const rec = findByKey(keys, token);
     if (!rec) return fail(401, "unknown key; see /auth.md to register");
     if (rec.revoked) return fail(401, "key revoked");
     if (rec.expires_at && Date.parse(rec.expires_at) < Date.now()) {
@@ -54,7 +51,7 @@ export function keymakerAuth({ dir, rateLimitPerMinute = 60 } = {}) {
 
     rec.usage = (rec.usage ?? 0) + 1;
     keys[rec.key_id] = rec;
-    writeFile(keysPath, JSON.stringify(keys, null, 2)).catch(() => {});
+    await writeKeys(dir, keys);
     billingPromise.then((b) => b?.onMeter(rec)).catch(() => {});
 
     req.agent = {

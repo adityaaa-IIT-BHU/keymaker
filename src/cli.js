@@ -82,6 +82,12 @@ program
       for (const w of warnings.slice(0, 20)) console.log(`  ⚠ ${w}`);
       if (warnings.length > 20) console.log(`  …and ${warnings.length - 20} more`);
     }
+    if (ops.length > 40) {
+      console.log(
+        `\n⚠ ${ops.length} tools is tool-explosion territory — agents pick tools better from small, curated sets.` +
+          `\n  Narrow it: keymaker generate <spec> --include <names…>   (or --exclude)`
+      );
+    }
     const { total, grade } = scoreSpec(spec, ops, warnings);
     console.log(`\nAgent-readiness score: ${total}/100 (${grade}) — run \`keymaker score\` for the breakdown`);
     console.log(`\nNext:`);

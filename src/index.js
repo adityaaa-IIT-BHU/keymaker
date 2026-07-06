@@ -4,5 +4,6 @@ export { keymakerAuth } from "./middleware.js";
 export { createBilling } from "./billing.js";
 export { verifyAttestation } from "./attest.js";
 export { loadSpec, deref } from "./parse.js";
+export { hashKey, findByKey, readKeys, writeKeys } from "./store.js";
 export { extractOperations } from "./extract.js";
 export { scoreSpec } from "./score.js";

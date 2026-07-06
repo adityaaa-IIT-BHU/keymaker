@@ -1,9 +1,10 @@
-import { readFile, writeFile } from "node:fs/promises";
-import { randomBytes } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { join } from "node:path";
 import { verifyAttestation } from "./attest.js";
 import { handleMcpRequest } from "./mcp-http.js";
 import { createBilling } from "./billing.js";
+import { hashKey, findByKey, readKeys, writeKeys } from "./store.js";
 
 function readJson(req) {
   return new Promise((resolve) => {
@@ -32,7 +33,6 @@ const GATEWAY_PATHS = new Set(["/auth.md", "/.well-known/auth.md", "/llms.txt", 
  * Returns true if the request was handled.
  */
 export async function keymakerGateway({ dir }) {
-  const keysPath = join(dir, "keys.json");
   let config = {};
   try {
     config = JSON.parse(await readFile(join(dir, "signup.config.json"), "utf8"));
@@ -57,15 +57,15 @@ export async function keymakerGateway({ dir }) {
   };
 
   // keys.json on disk is the source of truth — the vendor's API process
-  // (keymakerAuth middleware) reads and writes it too.
-  const load = async () => {
-    try {
-      return JSON.parse(await readFile(keysPath, "utf8"));
-    } catch {
-      return {};
-    }
+  // (keymakerAuth middleware) reads and writes it too. Raw keys are never
+  // stored; records hold a SHA-256 hash plus a display prefix.
+  const load = () => readKeys(dir);
+  const save = (keys) => writeKeys(dir, keys);
+  const safeEqual = (a, b) => {
+    const ba = Buffer.from(String(a ?? ""));
+    const bb = Buffer.from(String(b ?? ""));
+    return ba.length === bb.length && timingSafeEqual(ba, bb);
   };
-  const save = (keys) => writeFile(keysPath, JSON.stringify(keys, null, 2));
 
   const handler = async (req, res) => {
     const url = new URL(req.url, "http://localhost");
@@ -96,9 +96,11 @@ export async function keymakerGateway({ dir }) {
         const verified = Boolean(attResult?.verified);
         const keys = await load();
         const keyId = `key_${randomBytes(6).toString("hex")}`;
+        const apiKey = `ak_${randomBytes(24).toString("hex")}`;
         const record = {
           key_id: keyId,
-          api_key: `ak_${randomBytes(24).toString("hex")}`,
+          key_hash: hashKey(apiKey),
+          key_prefix: apiKey.slice(0, 10),
           client_name: String(body.client_name ?? "unnamed-agent").slice(0, 100),
           scopes: Array.isArray(body.scopes) && body.scopes.length ? body.scopes.map(String) : ["read"],
           status: verified ? "agent_verified" : "unclaimed",
@@ -116,9 +118,11 @@ export async function keymakerGateway({ dir }) {
         }
         keys[keyId] = record;
         await save(keys);
-        const { claim_token, ...pub } = record;
+        const { claim_token, key_hash, ...pub } = record;
         send(201, {
           ...pub,
+          api_key: apiKey,
+          key_storage: "hashed — this is the only time the full key is shown",
           ...(claim_token ? { claim_token, claim_endpoint: "/agent-auth/claim" } : {}),
           ...(attResult && !attResult.verified ? { attestation_error: attResult.reason } : {}),
         });
@@ -146,7 +150,7 @@ export async function keymakerGateway({ dir }) {
           return true;
         }
         const keys = await load();
-        const rec = Object.values(keys).find((k) => k.api_key === api_key);
+        const rec = findByKey(keys, api_key);
         const expired = rec?.expires_at && Date.parse(rec.expires_at) < Date.now();
         if (!rec || expired || rec.revoked) {
           send(401, { valid: false });
@@ -167,12 +171,12 @@ export async function keymakerGateway({ dir }) {
       if (req.method === "GET" && p === "/agent-auth/keys") {
         send(
           200,
-          Object.values(await load()).map(({ api_key, claim_token, ...rest }) => rest)
+          Object.values(await load()).map(({ key_hash, claim_token, ...rest }) => rest)
         );
         return true;
       }
       if (req.method === "POST" && p === "/agent-auth/revoke") {
-        if (!config.admin_token || req.headers["x-admin-token"] !== config.admin_token) {
+        if (!config.admin_token || !safeEqual(req.headers["x-admin-token"], config.admin_token)) {
           send(401, { error: "admin token required (x-admin-token header)" });
           return true;
         }
@@ -199,7 +203,7 @@ export async function keymakerGateway({ dir }) {
         const header = req.headers.authorization ?? "";
         const token = header.startsWith("Bearer ") ? header.slice(7) : null;
         const keys = await load();
-        const rec = token && Object.values(keys).find((k) => k.api_key === token);
+        const rec = findByKey(keys, token);
         const expired = rec?.expires_at && Date.parse(rec.expires_at) < Date.now();
         if (!rec || expired || rec.revoked) {
           send(401, { error: "valid bearer key required; register via POST /agent-auth (see /auth.md)" });
@@ -208,7 +212,9 @@ export async function keymakerGateway({ dir }) {
         const body = await readJson(req);
         await handleMcpRequest(req, res, body, {
           meta: mcpMeta,
-          agent: rec,
+          // api_key: the presented raw token — records only store its hash, and
+          // the proxy needs it to forward the agent's identity upstream.
+          agent: { ...rec, api_key: token },
           meter: async () => {
             const fresh = await load();
             if (fresh[rec.key_id]) {

@@ -1,10 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, writeFile, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startSignupServer } from "../src/serve.js";
 import { keymakerAuth } from "../src/middleware.js";
+import { hashKey } from "../src/store.js";
 
 async function tempDir(config = { dev_accept_any_attestation: true }) {
   const dir = await mkdtemp(join(tmpdir(), "keymaker-"));
@@ -59,6 +60,12 @@ test("signup → verify → claim → attested flow", async (t) => {
 
   const md = await (await fetch(`${base}/.well-known/auth.md`)).text();
   assert.match(md, /test auth\.md/);
+
+  // raw keys never touch disk — records hold only hash + display prefix
+  const onDisk = Object.values(JSON.parse(await readFile(join(dir, "keys.json"), "utf8")));
+  assert.ok(onDisk.length >= 2);
+  assert.ok(onDisk.every((r) => !r.api_key && r.key_hash && r.key_prefix.startsWith("ak_")));
+  assert.ok(onDisk.some((r) => r.key_hash === hashKey(reg.api_key)));
 });
 
 test("rejected attestation still issues a temporary key with the reason", async (t) => {
@@ -92,7 +99,8 @@ test("middleware enforces auth, scopes, and rate limit", async () => {
   const dir = await mkdtemp(join(tmpdir(), "keymaker-mw-"));
   const rec = {
     key_id: "key_1",
-    api_key: "ak_test",
+    key_hash: hashKey("ak_test"),
+    key_prefix: "ak_test",
     client_name: "t",
     scopes: ["read"],
     status: "claimed",

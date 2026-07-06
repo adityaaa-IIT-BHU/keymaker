@@ -2,6 +2,8 @@
 
 **Make your API agent-ready in an afternoon.**
 
+![keymaker demo — an agent discovers an API, signs itself up, and uses it via MCP with zero humans](demo.gif)
+
 Point Keymaker at your OpenAPI spec. It emits everything an AI agent needs to discover, sign up for, and use your product — with zero humans in the loop:
 
 - **`mcp-server.mjs`** — a runnable MCP server exposing every endpoint as a tool (stdio; works with Claude, Cursor, any MCP client)
@@ -133,6 +135,15 @@ Attestations are verified as JWTs (RS256/ES256/EdDSA) against the issuer's JWKS 
 - Agents are becoming the first consumer of APIs, and they pick tools by machine-readability. On YC's Lightcone podcast (Feb 2026), Garry Tan described Claude Code choosing the practically-deprecated Whisper V1 over Groq — 200× faster, 10× cheaper — for his transcription pipeline; his co-host pinned the cause: Groq's docs are hard to parse, Whisper's have far more examples.
 - YC's Summer 2026 RFS calls for exactly this: agents need to "discover, sign up for, and instantly start using new tools programmatically, without needing a human in the loop."
 - The signup protocol layer just standardized (WorkOS's auth.md, May 2026 — adopted by Cloudflare, Firecrawl, Resend, Monday.com). But implementing it — endpoints, attestation verification, key issuance, metering — is still work every vendor does by hand. **Keymaker is the retrofit layer: one command from OpenAPI spec to fully agent-ready.**
+
+## Security posture
+
+- **Keys are hashed at rest** (SHA-256) — `keys.json` stores hash + display prefix; the full key is shown exactly once, at registration. Lookups are timing-safe.
+- **Admin token comparison is timing-safe**; key writes are serialized and land atomically (tmp + rename).
+- **Rate limits by default**: 10 registrations/min/IP, 120 verifies/min/key, 60 API requests/min/key — all configurable.
+- Attestations are verified as signed JWTs against the issuer's JWKS (see above); dev-mode acceptance is explicit, config-gated, and off unless you say otherwise.
+
+Scale note: real-world specs are fine — GitHub's 12.6MB / 1,194-operation spec generates in ~0.3s (you'll get a tool-explosion warning telling you to curate with `--include`, because a 1,194-tool MCP server is how you get [the Whisper problem](#why-now)).
 
 ## Status & roadmap
 
