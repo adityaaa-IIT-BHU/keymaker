@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { createBilling } from "./billing.js";
 
 /**
  * Drop-in auth middleware for the vendor's own API.
@@ -11,6 +12,9 @@ import { join } from "node:path";
 export function keymakerAuth({ dir, rateLimitPerMinute = 60 } = {}) {
   const keysPath = join(dir, "keys.json");
   const hits = new Map();
+  const billingPromise = readFile(join(dir, "signup.config.json"), "utf8")
+    .then((raw) => createBilling(JSON.parse(raw).billing))
+    .catch(() => null);
 
   return async function auth(req, res, next) {
     const fail = (code, error) => {
@@ -51,6 +55,7 @@ export function keymakerAuth({ dir, rateLimitPerMinute = 60 } = {}) {
     rec.usage = (rec.usage ?? 0) + 1;
     keys[rec.key_id] = rec;
     writeFile(keysPath, JSON.stringify(keys, null, 2)).catch(() => {});
+    billingPromise.then((b) => b?.onMeter(rec)).catch(() => {});
 
     req.agent = {
       key_id: rec.key_id,

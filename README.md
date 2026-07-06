@@ -35,6 +35,40 @@ curl -s -X POST localhost:8787/agent-auth/verify -d '{"api_key":"ak_…"}'
 # → { "valid": true, "scopes": ["read","write"], "usage": 1 }
 ```
 
+## Mount it inside your app (one process, one port)
+
+You don't need a second service. Mount the gateway in your existing app:
+
+```js
+import { keymakerGateway, keymakerAuth } from "keymaker";
+
+const gateway = await keymakerGateway({ dir: "./agent-ready" });
+const auth = keymakerAuth({ dir: "./agent-ready" });
+
+// plain node:http
+createServer(async (req, res) => {
+  if (await gateway(req, res)) return;   // /llms.txt /auth.md /agent-auth* /mcp
+  if (!(await auth(req, res))) return;   // everything else needs an agent key
+  // …your routes, with req.agent populated
+});
+
+// express
+app.use(gateway.express());
+app.use(auth);
+```
+
+`node examples/single-process.mjs` shows the whole thing on one port.
+
+## Agents as paying customers (Stripe)
+
+Add to `signup.config.json` and set `STRIPE_SECRET_KEY`:
+
+```json
+"billing": { "provider": "stripe", "meter_event_name": "keymaker_api_call" }
+```
+
+Registration creates a Stripe customer for the agent (pass `billing_email` at signup — agents have inboxes now); every metered request emits a [Billing Meter event](https://docs.stripe.com/billing/subscriptions/usage-based). Attach a metered price and usage becomes invoices. Billing is optional and off by default — without config, nothing changes.
+
 ## One origin, whole loop: hosted `/mcp`
 
 `keymaker serve` doesn't just issue keys — it hosts the tools too. An agent needs exactly one URL:
@@ -105,12 +139,12 @@ Attestations are verified as JWTs (RS256/ES256/EdDSA) against the issuer's JWKS 
 v0.1 — working generator, signup server, JWT attestation verification, scope-enforcing middleware, per-key/per-IP rate limits, agent-readiness scoring. 12 passing tests (`npm test`). Roadmap:
 
 - [x] Hosted `/mcp` endpoint — one origin serves discovery, signup, and tools
+- [x] Mountable gateway — run everything inside your existing app, one process
+- [x] Stripe metered billing per key (agents as paying customers)
 - [x] Key revocation API
 - [x] CI gate: `keymaker score --json --min 80`
-- [ ] Stripe metered billing per key (agents as paying customers)
 - [ ] Managed hosting (`yourapi.keymaker.dev`) — no infra to run
 - [ ] x402 fallback for account-less micropayment access
-- [ ] Framework adapters (Hono, Next.js route handlers)
 - [ ] Registry submission: publish generated MCP servers to agent tool registries
 
 MIT. Built with the [MCP SDK](https://github.com/modelcontextprotocol/typescript-sdk).
