@@ -122,6 +122,53 @@ program
   });
 
 program
+  .command("improve")
+  .argument("<spec>", "OpenAPI spec path or URL")
+  .description("Draft missing summaries and descriptions with Claude, write an improved spec")
+  .option("-o, --out <file>", "output file (default: <name>.improved.<yaml|json>)")
+  .option("--model <model>", "Claude model to use", "claude-opus-4-8")
+  .action(async (specSrc, opts) => {
+    const { collectGaps, draftDescriptions, applyDescriptions } = await import("./improve.js");
+    const yaml = (await import("js-yaml")).default;
+    const { writeFile } = await import("node:fs/promises");
+
+    const spec = await loadSpec(specSrc);
+    const beforeExtract = extractOperations(spec);
+    const before = scoreSpec(spec, beforeExtract.ops, beforeExtract.warnings);
+
+    const gaps = collectGaps(spec);
+    const total = gaps.operations.length + gaps.parameters.length;
+    if (!total) {
+      console.log(`Nothing to improve — every operation and parameter is documented (${before.total}/100).`);
+      return;
+    }
+    console.log(`Drafting docs for ${gaps.operations.length} operation(s) and ${gaps.parameters.length} parameter(s) with ${opts.model}…`);
+
+    let drafts;
+    try {
+      drafts = await draftDescriptions(gaps, { model: opts.model });
+    } catch (err) {
+      if (/api.?key|auth/i.test(String(err?.message))) {
+        console.error("Claude API credentials needed: set ANTHROPIC_API_KEY, or run `ant auth login`.");
+        process.exit(1);
+      }
+      throw err;
+    }
+
+    const applied = applyDescriptions(spec, drafts);
+    const isJson = /\.json($|\?)/.test(specSrc);
+    const base = specSrc.split("/").pop().replace(/\.(json|ya?ml)$/, "");
+    const outFile = opts.out ?? `${base}.improved.${isJson ? "json" : "yaml"}`;
+    await writeFile(outFile, isJson ? JSON.stringify(spec, null, 2) : yaml.dump(spec, { lineWidth: 100 }));
+
+    const afterExtract = extractOperations(spec);
+    const after = scoreSpec(spec, afterExtract.ops, afterExtract.warnings);
+    console.log(`✔ Applied ${applied} drafted description(s) → ${outFile}`);
+    console.log(`Agent-readiness: ${before.total}/100 → ${after.total}/100 (${after.grade})`);
+    console.log(`Review the drafts before shipping — they're derived from names and paths, not your implementation.`);
+  });
+
+program
   .command("doctor")
   .argument("<hosts...>", "domain(s) to check, e.g. api.example.com docs.example.com")
   .description("Check a LIVE site for agent surfaces: llms.txt, auth.md, /mcp")

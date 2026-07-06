@@ -1,6 +1,6 @@
 {
   "name": "keymaker-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Make your API agent-ready in an afternoon: OpenAPI spec → curated MCP server + llms.txt + auth.md agent signup",
   "type": "module",
   "bin": {
@@ -46,6 +46,7 @@
   "license": "MIT",
   "author": "Aditya Acharya <aditya.acharya.bme23@itbhu.ac.in>",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "commander": "^12.0.0",
     "js-yaml": "^4.1.0"
