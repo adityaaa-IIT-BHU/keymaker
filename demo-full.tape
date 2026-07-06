@@ -1,4 +1,4 @@
-# vhs demo-full.tape → demo.mp4 — the 60-second full-loop demo
+# vhs demo-full.tape → demo.mp4 — real APIs only: GitHub's spec + Peekalink's production API
 Output demo.mp4
 
 Set FontSize 17
@@ -10,38 +10,35 @@ Set Theme "Catppuccin Mocha"
 Set Shell "bash"
 
 Hide
-Type "alias keymaker='node src/cli.js' && pkill -f 'cli.js serve' 2>/dev/null; pkill -f toy-api 2>/dev/null; rm -rf out/video /tmp/reg.json; clear"
+Type "alias keymaker='node src/cli.js' && pkill -f 'cli.js serve' 2>/dev/null; rm -rf out/peekalink /tmp/reg.json; clear"
 Enter
 Show
 
-Type "# Agents pick APIs by docs quality, not API quality. Is yours even visible to them?"
+Type "# Agents pick APIs by docs quality, not API quality. Even the giants aren't ready:"
 Enter
 Sleep 2.5s
 
-Type "keymaker score https://petstore3.swagger.io/api/v3/openapi.json"
+Type@12ms "keymaker score https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.json"
 Enter
-Sleep 6s
+Sleep 8s
 
-Type "# Even the official Swagger Petstore gets a B. Let's make an API fully agent-ready:"
+Type "# 1,194 operations and even GitHub forgot to declare its auth schemes."
+Enter
+Sleep 2.5s
+
+Type "# Now watch a real production API (peekalink.io) become fully agent-ready:"
 Enter
 Sleep 2s
 
-Type "keymaker generate examples/todo-api.yaml -o out/video --base-url http://localhost:3456/v1"
+Type "keymaker generate https://api.peekalink.io/mintlify -o out/peekalink"
 Enter
-Sleep 5.5s
+Sleep 5s
 
-Hide
-Type "node examples/toy-api.mjs out/video >/dev/null 2>&1 &"
-Enter
-Type "clear"
-Enter
-Show
-
-Type "keymaker serve out/video &"
+Type "keymaker serve out/peekalink &"
 Enter
 Sleep 3s
 
-Type "# Now an AI agent signs itself up. No human. No dashboard. One request:"
+Type "# An AI agent signs itself up. No human anywhere:"
 Enter
 Sleep 2s
 
@@ -53,18 +50,18 @@ Type `KEY=$(jq -r .api_key /tmp/reg.json)`
 Enter
 Sleep 1s
 
-Type "# ...and immediately uses the API through the hosted MCP endpoint:"
+Type "# ...and discovers Peekalink's real tools over the hosted MCP endpoint:"
 Enter
 Sleep 2s
 
-Type@12ms `curl -s -X POST localhost:8787/mcp -H "authorization: Bearer $KEY" -H "content-type: application/json" -H "accept: application/json, text/event-stream" -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"createTask","arguments":{"title":"hello from an agent"}}}' | jq -r ".result.content[0].text"`
+Type@12ms `curl -s -X POST localhost:8787/mcp -H "authorization: Bearer $KEY" -H "content-type: application/json" -H "accept: application/json, text/event-stream" -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | jq ".result.tools"`
 Enter
 Sleep 5s
 
-Type "# Discover → sign up → scoped key → tools. Hashed, metered, revocable. Zero humans."
+Type "# A real API, agent-ready in one command. Scoped, hashed, metered keys. Zero humans."
 Enter
-Sleep 2s
+Sleep 2.5s
 
-Type "# github.com/adityaaa-IIT-BHU/keymaker   ·   npx agent-ready"
+Type "# https://github.com/adityaaa-IIT-BHU/keymaker"
 Enter
 Sleep 4s
