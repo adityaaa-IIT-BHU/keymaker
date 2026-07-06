@@ -37,11 +37,16 @@ export async function startSignupServer({ dir, port = 8787 }) {
     return true;
   };
 
-  let keys = {};
-  try {
-    keys = JSON.parse(await readFile(keysPath, "utf8"));
-  } catch {}
-  const save = () => writeFile(keysPath, JSON.stringify(keys, null, 2));
+  // keys.json on disk is the source of truth — the vendor's API process
+  // (keymakerAuth middleware) reads and writes it too.
+  const load = async () => {
+    try {
+      return JSON.parse(await readFile(keysPath, "utf8"));
+    } catch {
+      return {};
+    }
+  };
+  const save = (keys) => writeFile(keysPath, JSON.stringify(keys, null, 2));
 
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, "http://localhost");
@@ -64,6 +69,7 @@ export async function startSignupServer({ dir, port = 8787 }) {
         let attResult = null;
         if (body.attestation) attResult = await verifyAttestation(body.attestation, config);
         const verified = Boolean(attResult?.verified);
+        const keys = await load();
         const keyId = `key_${randomBytes(6).toString("hex")}`;
         const record = {
           key_id: keyId,
@@ -78,7 +84,7 @@ export async function startSignupServer({ dir, port = 8787 }) {
           usage: 0,
         };
         keys[keyId] = record;
-        await save();
+        await save(keys);
         const { claim_token, ...pub } = record;
         return send(201, {
           ...pub,
@@ -88,12 +94,13 @@ export async function startSignupServer({ dir, port = 8787 }) {
       }
       if (req.method === "POST" && url.pathname === "/agent-auth/claim") {
         const { claim_token } = await readJson(req);
+        const keys = await load();
         const rec = Object.values(keys).find((k) => k.claim_token && k.claim_token === claim_token);
         if (!rec) return send(404, { error: "unknown claim token" });
         rec.status = "claimed";
         rec.expires_at = null;
         rec.claim_token = null;
-        await save();
+        await save(keys);
         return send(200, { key_id: rec.key_id, status: rec.status });
       }
       if (req.method === "POST" && url.pathname === "/agent-auth/verify") {
@@ -101,11 +108,12 @@ export async function startSignupServer({ dir, port = 8787 }) {
         if (!allow(verifyHits, String(api_key ?? "?"), verifyLimit)) {
           return send(429, { error: "verify rate limit exceeded" });
         }
+        const keys = await load();
         const rec = Object.values(keys).find((k) => k.api_key === api_key);
         const expired = rec?.expires_at && Date.parse(rec.expires_at) < Date.now();
         if (!rec || expired) return send(401, { valid: false });
         rec.usage += 1;
-        await save();
+        await save(keys);
         return send(200, {
           valid: true,
           key_id: rec.key_id,
@@ -117,7 +125,7 @@ export async function startSignupServer({ dir, port = 8787 }) {
       if (req.method === "GET" && url.pathname === "/agent-auth/keys") {
         return send(
           200,
-          Object.values(keys).map(({ api_key, claim_token, ...rest }) => rest)
+          Object.values(await load()).map(({ api_key, claim_token, ...rest }) => rest)
         );
       }
       return send(404, { error: "not found", hint: "GET /auth.md for agent registration instructions" });
