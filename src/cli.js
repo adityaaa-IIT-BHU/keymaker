@@ -122,6 +122,26 @@ program
   });
 
 program
+  .command("doctor")
+  .argument("<hosts...>", "domain(s) to check, e.g. api.example.com docs.example.com")
+  .description("Check a LIVE site for agent surfaces: llms.txt, auth.md, /mcp")
+  .option("--json", "machine-readable output")
+  .action(async (hosts, opts) => {
+    const { checkSite, formatDoctor } = await import("./doctor.js");
+    const results = [];
+    for (const host of hosts) {
+      const r = await checkSite(host);
+      results.push(r);
+      if (!opts.json) console.log(formatDoctor(r));
+    }
+    if (opts.json) console.log(JSON.stringify(results, null, 2));
+    const invisible = results.filter((r) => !r.llms_txt && !r.auth_md && !r.mcp).length;
+    if (!opts.json && results.length > 1) {
+      console.log(`\n${invisible}/${results.length} hosts have zero agent surfaces. keymaker generate fixes all three.`);
+    }
+  });
+
+program
   .command("serve")
   .argument("[dir]", "generated directory", "agent-ready")
   .option("-p, --port <port>", "port", "8787")

@@ -40,6 +40,44 @@ test("include/exclude filters by name", () => {
   assert.equal(extractOperations(spec, { exclude: ["update"] }).ops.length, 1);
 });
 
+test("handles Swagger 2.0 body and formData parameters", () => {
+  const v2 = {
+    swagger: "2.0",
+    info: { title: "old" },
+    paths: {
+      "/pets": {
+        post: {
+          operationId: "makePet",
+          summary: "Make pet",
+          parameters: [
+            {
+              name: "payload",
+              in: "body",
+              required: true,
+              schema: { type: "object", required: ["name"], properties: { name: { type: "string" }, age: { type: "integer" } } },
+            },
+          ],
+        },
+      },
+      "/upload": {
+        post: {
+          operationId: "upload",
+          summary: "Upload",
+          parameters: [{ name: "file_name", in: "formData", type: "string", required: true, description: "name" }],
+        },
+      },
+    },
+  };
+  const { ops } = extractOperations(v2);
+  const makePet = ops.find((o) => o.name === "makePet");
+  assert.deepEqual([...makePet.inputSchema.required].sort(), ["name"]);
+  assert.equal(makePet.paramLocs.name, "body");
+  assert.equal(makePet.paramLocs.age, "body");
+  const upload = ops.find((o) => o.name === "upload");
+  assert.equal(upload.paramLocs.file_name, "body");
+  assert.deepEqual(upload.inputSchema.required, ["file_name"]);
+});
+
 test("resolves $refs in operation schemas", () => {
   const refSpec = {
     openapi: "3.0.0",

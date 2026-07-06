@@ -23,6 +23,30 @@ export function extractOperations(spec, { include, exclude } = {}) {
       const paramLocs = {};
       for (const p of [...sharedParams, ...(op.parameters ?? [])]) {
         if (!p?.name) continue;
+        // Swagger 2.0: the whole request body arrives as a single in:"body" parameter
+        if (p.in === "body") {
+          const schema = p.schema ?? {};
+          if (schema.type === "object" && schema.properties) {
+            for (const [k, v] of Object.entries(schema.properties)) {
+              if (properties[k]) continue;
+              properties[k] = v;
+              paramLocs[k] = "body";
+              if ((schema.required ?? []).includes(k)) required.add(k);
+            }
+          } else {
+            properties.body = schema;
+            paramLocs.body = "body";
+            if (p.required) required.add("body");
+          }
+          continue;
+        }
+        // Swagger 2.0 formData fields are body fields for our purposes
+        if (p.in === "formData") {
+          properties[p.name] = { type: p.type ?? "string", ...(p.description ? { description: p.description } : {}) };
+          paramLocs[p.name] = "body";
+          if (p.required) required.add(p.name);
+          continue;
+        }
         properties[p.name] = {
           ...(p.schema ?? { type: "string" }),
           ...(p.description || p.schema?.description

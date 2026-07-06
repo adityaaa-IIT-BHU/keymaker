@@ -7,3 +7,4 @@ export { loadSpec, deref } from "./parse.js";
 export { hashKey, findByKey, readKeys, writeKeys } from "./store.js";
 export { extractOperations } from "./extract.js";
 export { scoreSpec } from "./score.js";
+export { checkSite } from "./doctor.js";
