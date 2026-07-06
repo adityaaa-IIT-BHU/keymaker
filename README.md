@@ -4,7 +4,7 @@
 
 ![keymaker demo — an agent discovers an API, signs itself up, and uses it via MCP with zero humans](https://raw.githubusercontent.com/adityaaa-IIT-BHU/keymaker/main/demo.gif)
 
-▶ **[60-second full demo (MP4)](https://github.com/adityaaa-IIT-BHU/keymaker/raw/main/demo.mp4)** — score → generate → agent self-signup → live MCP call, end to end.
+▶ **[Watch the 60-second full demo](https://github.com/adityaaa-IIT-BHU/keymaker/blob/main/demo.mp4)** — plays right on GitHub: score → generate → agent self-signup → live MCP call, end to end.
 
 Point Keymaker at your OpenAPI spec. It emits everything an AI agent needs to discover, sign up for, and use your product — with zero humans in the loop:
 
