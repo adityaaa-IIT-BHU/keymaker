@@ -1,0 +1,380 @@
+[
+  {
+    "host": "stripe.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "twilio.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "sendgrid.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "resend.com",
+    "llms_txt": true,
+    "auth_md": true,
+    "mcp": false
+  },
+  {
+    "host": "plaid.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "squareup.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "paypal.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "coinbase.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "github.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "gitlab.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "vercel.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "netlify.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "cloudflare.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "fly.io",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "render.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": true
+  },
+  {
+    "host": "railway.app",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": true
+  },
+  {
+    "host": "supabase.com",
+    "llms_txt": true,
+    "auth_md": true,
+    "mcp": true
+  },
+  {
+    "host": "neon.tech",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "planetscale.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": true
+  },
+  {
+    "host": "mongodb.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "redis.io",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": true
+  },
+  {
+    "host": "algolia.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "meilisearch.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "pinecone.io",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": true
+  },
+  {
+    "host": "weaviate.io",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "qdrant.tech",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "huggingface.co",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": true
+  },
+  {
+    "host": "replicate.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": true
+  },
+  {
+    "host": "modal.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "together.ai",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "groq.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": true
+  },
+  {
+    "host": "openai.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "anthropic.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "mistral.ai",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "elevenlabs.io",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "deepgram.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "assemblyai.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "linear.app",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "notion.so",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "airtable.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "slack.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": true
+  },
+  {
+    "host": "discord.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "shopify.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "postmarkapp.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "mailgun.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "sentry.io",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "datadoghq.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "launchdarkly.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "posthog.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": true
+  },
+  {
+    "host": "segment.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "clerk.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "workos.com",
+    "llms_txt": true,
+    "auth_md": true,
+    "mcp": false
+  },
+  {
+    "host": "auth0.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "zuplo.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "monday.com",
+    "llms_txt": true,
+    "auth_md": true,
+    "mcp": false
+  },
+  {
+    "host": "firecrawl.dev",
+    "llms_txt": true,
+    "auth_md": true,
+    "mcp": false
+  },
+  {
+    "host": "mintlify.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": true
+  },
+  {
+    "host": "peekalink.io",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "apitemplate.io",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "geocod.io",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "buttondown.com",
+    "llms_txt": true,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "documenso.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": false
+  },
+  {
+    "host": "screenshotone.com",
+    "llms_txt": false,
+    "auth_md": false,
+    "mcp": true
+  }
+]
