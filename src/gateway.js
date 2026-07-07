@@ -45,8 +45,10 @@ export async function keymakerGateway({ dir }) {
 
   const registrationLimit = config.registrations_per_minute_per_ip ?? 10;
   const verifyLimit = config.verifies_per_minute_per_key ?? 120;
+  const mcpLimit = config.mcp_requests_per_minute_per_key ?? 60;
   const regHits = new Map();
   const verifyHits = new Map();
+  const mcpHits = new Map();
   const allow = (map, id, limit) => {
     const now = Date.now();
     const recent = (map.get(id) ?? []).filter((t) => t > now - 60_000);
@@ -207,6 +209,10 @@ export async function keymakerGateway({ dir }) {
         const expired = rec?.expires_at && Date.parse(rec.expires_at) < Date.now();
         if (!rec || expired || rec.revoked) {
           send(401, { error: "valid bearer key required; register via POST /agent-auth (see /auth.md)" });
+          return true;
+        }
+        if (!allow(mcpHits, rec.key_id, mcpLimit)) {
+          send(429, { error: "mcp rate limit exceeded; retry in a minute" });
           return true;
         }
         const body = await readJson(req);

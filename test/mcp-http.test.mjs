@@ -20,7 +20,7 @@ async function rpc(base, key, method, params, id = 1) {
   return { status: res.status, body: await res.json().catch(() => null) };
 }
 
-async function setup(t) {
+async function setup(t, extraConfig = {}) {
   // Stub upstream API the MCP endpoint proxies to
   const upstream = createServer((req, res) => {
     res.writeHead(req.method === "POST" ? 201 : 200, { "content-type": "application/json" });
@@ -34,7 +34,7 @@ async function setup(t) {
   await writeFile(join(dir, "llms.txt"), "# l");
   await writeFile(
     join(dir, "signup.config.json"),
-    JSON.stringify({ dev_accept_any_attestation: true, admin_token: "adm_test" })
+    JSON.stringify({ dev_accept_any_attestation: true, admin_token: "adm_test", ...extraConfig })
   );
   await writeFile(
     join(dir, "tools.json"),
@@ -114,6 +114,14 @@ test("hosted /mcp: register → initialize → list → call, scope-filtered", a
   const issued = await (await fetch(`${base}/agent-auth/keys`)).json();
   const writer = issued.find((k) => k.scopes.includes("write"));
   assert.equal(writer.usage, 1);
+});
+
+test("hosted /mcp enforces its per-key rate limit", async (t) => {
+  const { base, register } = await setup(t, { mcp_requests_per_minute_per_key: 2 });
+  const key = await register(["read"]);
+  assert.equal((await rpc(base, key, "tools/list", {}, 1)).status, 200);
+  assert.equal((await rpc(base, key, "tools/list", {}, 2)).status, 200);
+  assert.equal((await rpc(base, key, "tools/list", {}, 3)).status, 429);
 });
 
 test("revocation kills a key everywhere", async (t) => {

@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { mkdir, writeFile, access } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { join } from "node:path";
+
+const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 import { loadSpec } from "./parse.js";
 import { extractOperations } from "./extract.js";
 import { renderMcpServer, toTools } from "./gen-mcp.js";
@@ -15,7 +18,21 @@ const program = new Command();
 program
   .name("keymaker")
   .description("Make your API agent-ready: OpenAPI → curated MCP server + llms.txt + auth.md agent signup")
-  .version("0.1.0");
+  .version(pkg.version)
+  .showHelpAfterError();
+
+program.addHelpText(
+  "after",
+  `
+Examples:
+  $ keymaker score https://petstore3.swagger.io/api/v3/openapi.json   grade a spec's agent-readiness
+  $ keymaker doctor stripe.com yourapi.com                            check live sites for agent surfaces
+  $ keymaker generate ./openapi.yaml -o agent-ready                   emit MCP server + llms.txt + auth.md
+  $ keymaker serve agent-ready                                        run agent signup + hosted /mcp
+  $ keymaker improve ./openapi.yaml                                   have Claude draft missing docs
+  $ keymaker keys agent-ready                                         list issued agent keys
+`
+);
 
 program
   .command("generate")
@@ -67,6 +84,7 @@ program
             trusted_issuers: [],
             registrations_per_minute_per_ip: 10,
             verifies_per_minute_per_key: 120,
+            mcp_requests_per_minute_per_key: 60,
             admin_token: `adm_${randomBytes(16).toString("hex")}`,
           },
           null,
@@ -201,6 +219,41 @@ program
     console.log(`  POST /agent-auth/claim   human claims a temporary key`);
     console.log(`  POST /agent-auth/verify  your backend verifies keys + meters usage`);
     console.log(`  GET  /agent-auth/keys    issued keys (redacted)`);
+  });
+
+program
+  .command("keys")
+  .argument("[dir]", "generated directory", "agent-ready")
+  .description("List issued agent keys, or revoke one")
+  .option("--revoke <key_id>", "revoke the key with this id")
+  .action(async (dir, opts) => {
+    const { readKeys, writeKeys } = await import("./store.js");
+    const keys = await readKeys(dir);
+    if (opts.revoke) {
+      if (!keys[opts.revoke]) {
+        console.error(`No such key: ${opts.revoke}`);
+        process.exit(1);
+      }
+      keys[opts.revoke].revoked = true;
+      await writeKeys(dir, keys);
+      console.log(`✔ revoked ${opts.revoke}`);
+      return;
+    }
+    const list = Object.values(keys);
+    if (!list.length) {
+      console.log("No keys issued yet. Agents register via POST /agent-auth.");
+      return;
+    }
+    for (const k of list) {
+      const state = k.revoked
+        ? "revoked"
+        : k.expires_at && Date.parse(k.expires_at) < Date.now()
+          ? "expired"
+          : k.status;
+      console.log(
+        `${k.key_id}  ${k.key_prefix}…  ${String(state).padEnd(14)} scopes=${k.scopes.join(",")}  usage=${k.usage}  created=${k.created_at}`
+      );
+    }
   });
 
 program.parse();
