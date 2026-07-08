@@ -184,6 +184,7 @@ Scale note: real-world specs are fine — GitHub's 12.6MB / 1,194-operation spec
 
 v0.1 — working generator, signup server, JWT attestation verification, scope-enforcing middleware, per-key/per-IP rate limits, agent-readiness scoring. 12 passing tests (`npm test`). Roadmap:
 
+- [x] SQLite storage — `"storage": {"driver": "sqlite"}` in signup.config.json swaps keys.json for keys.db via Node's built-in node:sqlite (zero new dependencies, Node 22.13+)
 - [x] Hosted `/mcp` endpoint — one origin serves discovery, signup, and tools
 - [x] Mountable gateway — run everything inside your existing app, one process
 - [x] Stripe metered billing per key (agents as paying customers)
