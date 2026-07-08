@@ -5,6 +5,7 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startSignupServer } from "../src/serve.js";
+import { initStripeBilling } from "../src/billing.js";
 
 test("billing: registration creates a Stripe customer, metering emits meter events", async (t) => {
   // Mock Stripe
@@ -64,6 +65,37 @@ test("billing: registration creates a Stripe customer, metering emits meter even
   assert.ok(meterCall, "meter event was sent to Stripe");
   assert.equal(meterCall.params.event_name, "km_test_call");
   assert.equal(meterCall.params["payload[stripe_customer_id]"], "cus_mock123");
+});
+
+test("billing-init creates meter, product, and metered price", async (t) => {
+  const calls = [];
+  const stripe = createServer(async (req, res) => {
+    let body = "";
+    for await (const c of req) body += c;
+    calls.push({ method: req.method, path: req.url, params: Object.fromEntries(new URLSearchParams(body)) });
+    res.writeHead(200, { "content-type": "application/json" });
+    if (req.method === "GET" && req.url === "/v1/billing/meters") return res.end(JSON.stringify({ data: [] }));
+    if (req.url === "/v1/billing/meters") return res.end(JSON.stringify({ id: "mtr_1", event_name: "km_call" }));
+    if (req.url === "/v1/products") return res.end(JSON.stringify({ id: "prod_1" }));
+    if (req.url === "/v1/prices") return res.end(JSON.stringify({ id: "price_1" }));
+    res.end("{}");
+  });
+  await new Promise((r) => stripe.listen(0, r));
+  t.after(() => stripe.close());
+
+  process.env.KM_INIT_STRIPE_KEY = "sk_test_mock";
+  const out = await initStripeBilling({
+    secretKeyEnv: "KM_INIT_STRIPE_KEY",
+    apiBase: `http://localhost:${stripe.address().port}`,
+    eventName: "km_call",
+    perCallUsd: 0.002,
+  });
+
+  assert.deepEqual(out, { meter_id: "mtr_1", product_id: "prod_1", price_id: "price_1", event_name: "km_call" });
+  const priceCall = calls.find((c) => c.path === "/v1/prices");
+  assert.equal(priceCall.params["recurring[meter]"], "mtr_1");
+  assert.equal(priceCall.params["recurring[usage_type]"], "metered");
+  assert.equal(priceCall.params.unit_amount_decimal, "0.2");
 });
 
 test("billing disabled → no customer id, registration still works", async (t) => {

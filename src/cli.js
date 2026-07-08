@@ -222,6 +222,27 @@ program
   });
 
 program
+  .command("billing-init")
+  .description("Create the Stripe meter + metered price for agent billing (test mode works)")
+  .option("--per-call-usd <usd>", "price per metered agent request in USD", "0.001")
+  .action(async (opts) => {
+    const { initStripeBilling } = await import("./billing.js");
+    try {
+      const r = await initStripeBilling({ perCallUsd: Number(opts.perCallUsd) });
+      console.log("✔ Stripe billing wired:");
+      console.log(`  meter    ${r.meter_id}  (event: ${r.event_name})`);
+      console.log(`  product  ${r.product_id}`);
+      console.log(`  price    ${r.price_id}  ($${opts.perCallUsd}/call, monthly invoice)`);
+      console.log(`\nAdd to signup.config.json:`);
+      console.log(`  "billing": { "provider": "stripe", "meter_event_name": "${r.event_name}" }`);
+      console.log(`\nThen subscribe an agent's Stripe customer to ${r.price_id} and its usage becomes invoices.`);
+    } catch (err) {
+      console.error(String(err?.message ?? err));
+      process.exit(1);
+    }
+  });
+
+program
   .command("keys")
   .argument("[dir]", "generated directory", "agent-ready")
   .description("List issued agent keys, or revoke one")
