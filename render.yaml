@@ -1,0 +1,15 @@
+# Keymaker Cloud on Render.  Push this repo, then New → Blueprint → pick this file.
+services:
+  - type: web
+    name: keymaker-cloud
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: KEYMAKER_DATA
+        value: /data
+      # After first deploy, set PUBLIC_URL to the assigned onrender.com URL.
+    disk:
+      name: keymaker-data
+      mountPath: /data
+      sizeGB: 1

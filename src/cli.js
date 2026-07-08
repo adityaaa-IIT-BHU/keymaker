@@ -222,6 +222,23 @@ program
   });
 
 program
+  .command("cloud")
+  .description("Run the hosted multi-tenant platform (vendors provision from a spec, get live agent endpoints)")
+  .option("-p, --port <port>", "port", process.env.PORT ?? "8080")
+  .option("--data <dir>", "data root", process.env.KEYMAKER_DATA ?? "data")
+  .option("--public-url <url>", "public origin (for URLs in responses)", process.env.PUBLIC_URL)
+  .action(async (opts) => {
+    const { startCloud } = await import("./cloud.js");
+    const server = await startCloud({ dataRoot: opts.data, port: Number(opts.port), publicUrl: opts.publicUrl });
+    const url = opts.publicUrl ?? `http://localhost:${server.address().port}`;
+    console.log(`Keymaker Cloud on ${url}`);
+    console.log(`  GET  /                    landing + provision form`);
+    console.log(`  POST /v1/tenants          {name, spec_url} → live agent endpoints`);
+    console.log(`  ALL  /t/<id>/…            per-tenant agent-auth, mcp, auth.md, llms.txt, OAuth`);
+    console.log(`  GET  /t/<id>/dashboard    keys + usage (needs admin_token)`);
+  });
+
+program
   .command("billing-init")
   .description("Create the Stripe meter + metered price for agent billing (test mode works)")
   .option("--per-call-usd <usd>", "price per metered agent request in USD", "0.001")
@@ -260,7 +277,7 @@ program
       console.log(`✔ revoked ${opts.revoke}`);
       return;
     }
-    const list = Object.values(keys);
+    const list = Object.values(keys).filter((k) => k.type !== "oauth_client");
     if (!list.length) {
       console.log("No keys issued yet. Agents register via POST /agent-auth.");
       return;

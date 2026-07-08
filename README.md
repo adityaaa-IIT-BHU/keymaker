@@ -187,10 +187,12 @@ v0.1 — working generator, signup server, JWT attestation verification, scope-e
 - [x] SQLite storage — `"storage": {"driver": "sqlite"}` in signup.config.json swaps keys.json for keys.db via Node's built-in node:sqlite (zero new dependencies, Node 22.13+)
 - [x] Hosted `/mcp` endpoint — one origin serves discovery, signup, and tools
 - [x] Mountable gateway — run everything inside your existing app, one process
-- [x] Stripe metered billing per key (agents as paying customers)
+- [x] Stripe metered billing per key (agents as paying customers) — `keymaker billing-init` sets up the meter + price
 - [x] Key revocation API
 - [x] CI gate: `keymaker score --json --min 80`
-- [ ] Managed hosting (`yourapi.keymaker.dev`) — no infra to run
+- [x] OAuth 2.1 for MCP clients — RFC 9728/8414/7591 discovery + client_credentials, so Claude Desktop/Cursor connect without pasting keys
+- [x] **Managed hosting** — `keymaker cloud` runs the multi-tenant platform: vendors provision from a spec URL and get live per-tenant agent endpoints, dashboards, and OAuth. See [docs/HOSTING.md](docs/HOSTING.md)
+- [ ] Automated vendor billing on the hosted platform
 - [ ] x402 fallback for account-less micropayment access
 - [ ] Registry submission: publish generated MCP servers to agent tool registries
 

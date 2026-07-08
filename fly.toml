@@ -1,0 +1,31 @@
+# Keymaker Cloud on Fly.io.  Deploy:
+#   fly launch --no-deploy      (creates the app; keep this fly.toml)
+#   fly volumes create keymaker_data --size 1
+#   fly deploy
+# Then set PUBLIC_URL to your app's URL so provisioned endpoints are absolute:
+#   fly secrets set PUBLIC_URL=https://<your-app>.fly.dev
+app = "keymaker-cloud"
+primary_region = "iad"
+
+[build]
+
+[env]
+  PORT = "8080"
+  KEYMAKER_DATA = "/data"
+
+[[mounts]]
+  source = "keymaker_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/healthz"
+    interval = "30s"
+    timeout = "5s"

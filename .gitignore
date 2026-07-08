@@ -1,4 +1,7 @@
 node_modules/
 out/
+data/
 keys.json
+keys.db
+*.db
 .DS_Store
